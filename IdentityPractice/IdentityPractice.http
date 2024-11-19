@@ -1,0 +1,6 @@
+@IdentityPractice_HostAddress = http://localhost:5231
+
+GET {{IdentityPractice_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
