@@ -1,5 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using IdentityPractice.Model;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace IdentityPractice.Controllers
 {
@@ -7,23 +14,69 @@ namespace IdentityPractice.Controllers
     [ApiController]
     public class HomeController : ControllerBase
     {
-        public HomeController()
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
+
+        private const string _secretKey = "KlSecretKey====00099230203230230 ::>> xsd023++..sd";
+        private const string _issuer = "Issuer";
+        private const string _audience = "Audience";
+
+        public HomeController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
         {
-            
+            _userManager = userManager;
+            _signInManager = signInManager;
         }
 
         [HttpPost("/register")]
-        public IActionResult Register()
+        public async Task<IActionResult> Register([FromBody] RegisterModel model)
         {
-            return Ok();
+            var user = new IdentityUser()
+            {
+                UserName = model.Username
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return Ok("Register success");
         }
 
         [HttpPost("/login")]
-        public IActionResult Login()
+        public async Task<IActionResult> Login([FromBody] LoginModel model)
         {
-            return Ok();
+            var user = await _userManager.FindByNameAsync(model.Username);
+
+            if (user is null)
+            {
+                return Unauthorized("Invalid username");
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(
+                user, model.Password, false, false
+                );
+
+            if (!result.Succeeded)
+            {
+                return Unauthorized("Invalid username or password");
+            }
+
+            var token = this.CreateToken(user);
+
+            var retVal = new
+            {
+                token
+                ,msg = "Login success"
+            };
+
+            return Ok(retVal);
         }
 
+        [Authorize]
         [HttpGet("/getTodos")]
         public IActionResult GetTodos()
         {
@@ -34,6 +87,33 @@ namespace IdentityPractice.Controllers
             };
 
             return Ok(list);
+        }
+
+        private string CreateToken(IdentityUser user)
+        {
+            string retVal = string.Empty;
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserName),
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _issuer,
+                audience: _audience,
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: credentials
+                );
+
+            retVal = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return retVal;
         }
     }
 }
