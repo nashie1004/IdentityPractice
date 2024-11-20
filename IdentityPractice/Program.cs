@@ -15,15 +15,21 @@ builder.Services.AddDbContext<AuthDbContext>(opt =>
     opt.UseInMemoryDatabase("AuthDb");
 });
 
-builder.Services.AddControllers();
 
 builder.Services
     .AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders()
     ;
+builder.Services.AddControllers();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+        .AddAuthentication(opt =>
+        {
+            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            opt.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
@@ -74,11 +80,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "WorkoutTracker API V1");
-        c.RoutePrefix = string.Empty;  // Makes Swagger UI accessible at the root URL
-    });
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();

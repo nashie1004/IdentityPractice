@@ -60,15 +60,9 @@ namespace IdentityPractice.Controllers
             {
                 return Unauthorized("Invalid username");
             }
-
-            // This line sets Cookie?
-            var result = await _signInManager.PasswordSignInAsync(
-                user, model.Password, false, false
-                );
-
-            if (!result.Succeeded)
+            if (!await _userManager.CheckPasswordAsync(user, model.Password))
             {
-                return Unauthorized("Invalid username or password");
+                return Unauthorized("Invalid password");
             }
 
             var token = this.CreateToken(user);
@@ -108,7 +102,7 @@ namespace IdentityPractice.Controllers
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
