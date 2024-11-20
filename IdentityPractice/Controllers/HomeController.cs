@@ -16,15 +16,21 @@ namespace IdentityPractice.Controllers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IConfiguration _configuration;
 
-        private const string _secretKey = "KlSecretKey====00099230203230230 ::>> xsd023++..sd";
-        private const string _issuer = "Issuer";
-        private const string _audience = "Audience";
+        private readonly string _secretKey;
+        private readonly string _issuer;
+        private readonly string _audience;
 
-        public HomeController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+        public HomeController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration config)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _configuration = config;
+
+            _secretKey = config["Jwt:Key"];
+            _issuer = config["Jwt:Issuer"];
+            _audience = config["Jwt:Audience"];
         }
 
         [HttpPost("/register")]
@@ -55,7 +61,7 @@ namespace IdentityPractice.Controllers
                 return Unauthorized("Invalid username");
             }
 
-            // Cookie
+            // This line sets Cookie?
             var result = await _signInManager.PasswordSignInAsync(
                 user, model.Password, false, false
                 );
