@@ -42,7 +42,6 @@ namespace IdentityPractice.Controllers
                 return BadRequest(result.Errors);
             }
 
-            await _signInManager.SignInAsync(user, isPersistent: false);
             return Ok("Register success");
         }
 
@@ -56,6 +55,7 @@ namespace IdentityPractice.Controllers
                 return Unauthorized("Invalid username");
             }
 
+            // Cookie
             var result = await _signInManager.PasswordSignInAsync(
                 user, model.Password, false, false
                 );
@@ -74,6 +74,13 @@ namespace IdentityPractice.Controllers
             };
 
             return Ok(retVal);
+        }
+
+        [HttpPost("/logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok("Signout success");
         }
 
         [Authorize]
